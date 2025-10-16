@@ -1,0 +1,9 @@
+[package]
+name = "eolymp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = "0.33.0"
+egui = "0.33.0"
+rand = "0.10.0-rc.0"
