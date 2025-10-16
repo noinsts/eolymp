@@ -53,6 +53,10 @@ impl MyApp {
     fn is_url_valid(&self) -> bool {
         self.problem_id.is_some()
     }
+
+    fn copy(&self, ctx: &egui::Context) {
+        ctx.copy_text(self.url.clone())
+    }
 }
 
 impl eframe::App for MyApp {
@@ -80,6 +84,12 @@ impl MyApp {
                 .clicked()
             {
                 self.open_url();
+            }
+
+            if ui.add_enabled(self.is_url_valid(), egui::Button::new("📋 Copy"))
+                .clicked()
+            {
+                self.copy(ctx);
             }
         });
 
