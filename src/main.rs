@@ -43,6 +43,16 @@ impl MyApp {
     fn build_url(&self, id: u32) -> String {
         format!("{}/{}", BASE_URL, id)
     }
+
+    fn open_url(&self) {
+        if let Err(e) = open::that(&self.url) {
+            eprintln!("Помилка при відкритті URL: {}", e);
+        }
+    }
+
+    fn is_url_valid(&self) -> bool {
+        self.problem_id.is_some()
+    }
 }
 
 impl eframe::App for MyApp {
@@ -65,6 +75,12 @@ impl MyApp {
             {
                 self.generate_url();
             };
+
+            if ui.add_enabled(self.is_url_valid(), egui::Button::new("🌐 Open"))
+                .clicked()
+            {
+                self.open_url();
+            }
         });
 
         ui.label("URL:");
