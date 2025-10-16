@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 use eframe::egui;
 use rand::Rng;
 
@@ -19,9 +20,18 @@ fn main() -> Result<(), eframe::Error> {
     )
 }
 
+#[derive(Debug, Copy, Clone)]
+enum AppAction {
+    Generated,
+    Opened,
+    Copied,
+}
+
 struct MyApp {
     url: String,
     problem_id: Option<u32>,
+    last_action: Option<AppAction>,
+    timestamp: Option<Instant>,
 }
 
 impl MyApp {
@@ -29,6 +39,8 @@ impl MyApp {
         Self {
             url: String::new(),
             problem_id: None,
+            last_action: None,
+            timestamp: None,
         }
     }
 
@@ -38,24 +50,45 @@ impl MyApp {
 
         self.problem_id = Some(problem_id);
         self.url = self.build_url(problem_id);
+        self.set_action(AppAction::Generated);
     }
 
     fn build_url(&self, id: u32) -> String {
         format!("{}/{}", BASE_URL, id)
     }
 
-    fn open_url(&self) {
+    fn open_url(&mut self) {
         if let Err(e) = open::that(&self.url) {
             eprintln!("Помилка при відкритті URL: {}", e);
         }
+        self.set_action(AppAction::Opened);
     }
 
     fn is_url_valid(&self) -> bool {
         self.problem_id.is_some()
     }
 
-    fn copy(&self, ctx: &egui::Context) {
-        ctx.copy_text(self.url.clone())
+    fn copy(&mut self, ctx: &egui::Context) {
+        ctx.copy_text(self.url.clone());
+        self.set_action(AppAction::Copied);
+    }
+
+    fn get_action_message(&self) -> Option<String> {
+        if let (Some(action), Some(timestamp)) = (self.last_action, self.timestamp) {
+            if timestamp.elapsed() < Duration::from_secs(1) {
+                return Some(match action {
+                    AppAction::Generated => "✅ URL згенеровано!".to_string(),
+                    AppAction::Opened => "🌐 URL відкрито в браузері!".to_string(),
+                    AppAction::Copied => "📋 Скопійовано в буфер обміну!".to_string(),
+                })
+            }
+        }
+        None
+    }
+
+    fn set_action(&mut self, action: AppAction) {
+        self.last_action = Some(action);
+        self.timestamp = Some(Instant::now());
     }
 }
 
@@ -64,9 +97,14 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 ui.heading("Eolymp");
-                ui.separator();
 
+                ui.separator();
                 self.render_main_section(ui, ctx);
+
+                ui.separator();
+                self.render_action_feedback(ui, ctx);
+
+                ui.separator();
             });
     }
 }
@@ -98,6 +136,12 @@ impl MyApp {
 
         if let Some(id) = self.problem_id {
             ui.label(format!("Problem ID: {}", id));
+        }
+    }
+
+    fn render_action_feedback(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        if let Some(message) = self.get_action_message() {
+            ui.colored_label(egui::Color32::GREEN, &message);
         }
     }
 }
