@@ -1,6 +1,10 @@
+use std::fmt::format;
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
+use std::thread;
 use eframe::egui;
 use rand::Rng;
+use scraper::{Html, Selector};
 
 const BASE_URL: &str = "https://eolymp.com/uk/problems";
 const MIN_PROBLEM_ID: u32 = 1;
@@ -30,17 +34,27 @@ enum AppAction {
 struct MyApp {
     url: String,
     problem_id: Option<u32>,
+    name: Option<String>,
+    is_loading: bool,
     last_action: Option<AppAction>,
     timestamp: Option<Instant>,
+    rx: mpsc::Receiver<String>,
+    tx: mpsc::Sender<String>,
 }
 
 impl MyApp {
     fn new() -> Self {
+        let (tx, rx) = mpsc::channel();
+
         Self {
             url: String::new(),
             problem_id: None,
+            name: None,
+            is_loading: false,
             last_action: None,
             timestamp: None,
+            rx,
+            tx,
         }
     }
 
@@ -50,7 +64,11 @@ impl MyApp {
 
         self.problem_id = Some(problem_id);
         self.url = self.build_url(problem_id);
+        self.name = None;
+        self.is_loading = true;
         self.set_action(AppAction::Generated);
+
+        self.fetch_title();
     }
 
     fn build_url(&self, id: u32) -> String {
@@ -90,10 +108,45 @@ impl MyApp {
         self.last_action = Some(action);
         self.timestamp = Some(Instant::now());
     }
+
+    fn fetch_title(&self) {
+        let tx = self.tx.clone();
+        let url = self.url.clone();
+
+        thread::spawn(move || {
+            if let Some(title) = Self::get_problem_title(&url) {
+                let _ = tx.send(title);
+            }
+        });
+    }
+
+    fn get_problem_title(url: &str) -> Option<String> {
+        let html = reqwest::blocking::get(url).ok()?.text().ok()?;
+        let document = Html::parse_document(&html);
+
+        if let Ok(selector) = Selector::parse("title") {
+            if let Some(element) = document.select(&selector).next() {
+                let title = element.text().collect::<String>().trim().to_string();
+                if !title.is_empty() {
+                    return Some(title);
+                }
+            }
+        }
+        None
+    }
+
+    fn check_for_title(&mut self) {
+        if let Ok(title) = self.rx.try_recv() {
+            self.name = Some(title);
+            self.is_loading = false;
+        }
+    }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        self.check_for_title();
+
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 ui.heading("Eolymp");
@@ -130,6 +183,15 @@ impl MyApp {
                 self.copy(ctx);
             }
         });
+
+        ui.separator();
+
+        if self.is_loading {
+            ui.label("⏳ Завантаження нової задачі...");
+        }
+        else if let Some(name) = &self.name {
+            ui.colored_label(egui::Color32::LIGHT_BLUE, format!("📝 {}", name));
+        }
 
         ui.label("URL:");
         ui.text_edit_singleline(&mut self.url);
