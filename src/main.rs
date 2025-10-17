@@ -89,8 +89,8 @@ impl MyApp {
         format!("{}/{}", BASE_URL, id)
     }
 
-    fn open_url(&mut self) {
-        if let Err(e) = open::that(&self.url) {
+    fn open_url(&mut self, url: String) {
+        if let Err(e) = open::that(&url) {
             eprintln!("Помилка при відкритті URL: {}", e);
         }
         self.set_action(AppAction::Opened);
@@ -277,7 +277,7 @@ impl MyApp {
                 .on_hover_text("Відкрити задачу у браузері")
                 .clicked()
             {
-                self.open_url();
+                self.open_url(self.url.clone());
             }
 
             // Copy button
@@ -457,6 +457,7 @@ impl MyApp {
         }
         else {
             let mut to_delete = None;
+            let mut to_open = None;
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
@@ -531,7 +532,7 @@ impl MyApp {
                                         .on_hover_text("Відкрити в браузері")
                                         .clicked()
                                     {
-                                        //
+                                        to_open = Some(problem.url.clone());
                                     }
 
                                     ui.add_space(10.0);
@@ -541,7 +542,7 @@ impl MyApp {
                             ui.add_space(8.0);
                         });
 
-                        if (idx < self.saved_problems.len() - 1) {
+                        if idx < self.saved_problems.len() - 1 {
                             ui.add_space(8.0);
                         }
                     };
@@ -549,6 +550,10 @@ impl MyApp {
 
             if let Some(id) = to_delete {
                 self.delete_saved_problem(id);
+            }
+
+            if let Some(url) = to_open {
+                self.open_url(url);
             }
         }
     }
