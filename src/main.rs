@@ -3,11 +3,12 @@ mod db;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use std::thread;
-use diesel::serialize::ToSql;
+
 use eframe::egui;
 use rand::Rng;
 use scraper::{Html, Selector};
-use crate::db::{Database, Problem};
+
+use crate::db::Database;
 
 const BASE_URL: &str = "https://eolymp.com/uk/problems";
 const MIN_PROBLEM_ID: u32 = 1;
@@ -16,7 +17,7 @@ const MAX_PROBLEM_ID: u32 = 12000;
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([600.0, 400.0]),
+            .with_inner_size([600.0, 800.0]),
         ..Default::default()
     };
 
@@ -184,21 +185,30 @@ impl eframe::App for MyApp {
             })
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.add_space(10.0);
-                    ui.heading("🔗 Eolymp Problem Generator");
-                    ui.add_space(5.0);
-                    ui.label("Знайди випадкову задачу для розв'язання");
+                    ui.add_space(15.0);
+                    ui.heading(
+                        egui::RichText::new("🔗 Eolymp Problem Generator")
+                            .size(28.0)
+                    );
+                    ui.label(
+                        egui::RichText::new("Знайди випадкову задачу для розв'язання")
+                            .size(14.0)
+                            .color(egui::Color32::from_rgb(150, 150, 150)),
+                    );
+                    ui.add_space(20.0);
+
+                    ui.vertical_centered(|ui| {
+                        self.render_main_section(ui, ctx);
+                        ui.add_space(20.0);
+                        self.render_info_section(ui, ctx);
+                        ui.add_space(10.0);
+                        self.render_action_feedback(ui, ctx);
+                    });
+
+                    ui.add_space(25.0);
+                    ui.separator();
                     ui.add_space(15.0);
 
-                    self.render_main_section(ui, ctx);
-
-                    ui.add_space(15.0);
-                    self.render_info_section(ui, ctx);
-
-                    ui.add_space(15.0);
-                    self.render_action_feedback(ui, ctx);
-
-                    ui.add_space(15.0);
                     self.render_saved_problems(ui, ctx);
                 });
             });
@@ -207,8 +217,8 @@ impl eframe::App for MyApp {
 
 impl MyApp {
     fn render_main_section(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        let button_width = 100.0;
-        let button_height = 40.0;
+        let button_width = 110.0;
+        let button_height = 45.0;
         let spacing_x = 10.0;
         let num_buttons = 4.0;
 
@@ -219,9 +229,11 @@ impl MyApp {
             ui.add_space(left_padding.max(0.0));
             ui.spacing_mut().item_spacing.x = spacing_x;
 
+            // Generate button
             if ui.add(
                 egui::Button::new(
                     egui::RichText::new("🎲 Generate")
+                        .size(13.0)
                         .color(egui::Color32::WHITE)
                         .strong()
                 )
@@ -235,10 +247,12 @@ impl MyApp {
                 self.generate_url();
             }
 
+            // Open button
             if ui.add_enabled(
                 self.is_url_valid(),
                 egui::Button::new(
                     egui::RichText::new("🌐 Open")
+                        .size(13.0)
                         .color(egui::Color32::WHITE)
                         .strong()
                 )
@@ -252,10 +266,12 @@ impl MyApp {
                 self.open_url();
             }
 
+            // Copy button
             if ui.add_enabled(
                 self.is_url_valid(),
                 egui::Button::new(
                     egui::RichText::new("📋 Copy")
+                        .size(13.0)
                         .color(egui::Color32::WHITE)
                         .strong()
                 )
@@ -269,10 +285,12 @@ impl MyApp {
                 self.copy(ctx);
             }
 
+            // Save button
             if ui.add_enabled(
                 self.is_url_valid(),
                 egui::Button::new(
                     egui::RichText::new("💾 Save")
+                        .size(13.0)
                         .color(egui::Color32::WHITE)
                         .strong()
                 )
@@ -290,93 +308,228 @@ impl MyApp {
 
     fn render_info_section(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         ui.group(|ui| {
-            ui.set_width(ui.available_width());
+            ui.set_width(ui.available_width() * 0.8);
 
+            ui.add_space(8.0);
+
+            // Title
             ui.horizontal(|ui| {
                 ui.label(
-                    egui::RichText::new("📝 Назва:").size(14.0).strong()
+                    egui::RichText::new("📝 Назва:")
+                        .size(13.0)
+                        .strong()
+                        .color(egui::Color32::from_rgb(200, 200, 200))
                 );
 
                 if self.is_loading {
-                    ui.spinner().on_hover_text("Завантаження даних з серверу...");
-                    ui.colored_label(egui::Color32::YELLOW, "⏳ Завантаження...");
+                    ui.add_space(5.0);
+                    ui.spinner();
+                    ui.colored_label(
+                        egui::Color32::YELLOW,
+                        egui::RichText::new("⏳ Завантаження...")
+                            .size(13.0)
+                    );
                 }
                 else if let Some(name) = &self.name {
-                    ui.colored_label(egui::Color32::from_rgb(150, 200, 255), format!("📝 {}", name));
+                    ui.colored_label(
+                        egui::Color32::from_rgb(150, 200, 255),
+                        egui::RichText::new(name).size(12.0)
+                    );
+                }
+                else {
+                    ui.colored_label(
+                        egui::Color32::DARK_GRAY,
+                        egui::RichText::new("(---)").size(12.0)
+                    );
                 }
             });
 
+            ui.add_space(8.0);
             ui.separator();
+            ui.add_space(8.0);
 
+            // URL
             ui.horizontal(|ui| {
                 ui.label(
-                    egui::RichText::new(format!("🔗 URL: {}", self.url)).size(14.0).strong()
+                    egui::RichText::new("🔗 URL")
+                        .size(13.0)
+                        .strong()
+                        .color(egui::Color32::from_rgb(200, 200, 200))
                 );
+
+                if self.url.is_empty() {
+                    ui.colored_label(
+                        egui::Color32::DARK_GRAY,
+                        egui::RichText::new("(---)")
+                            .size(12.0)
+                    );
+                }
+                else {
+                    ui.colored_label(
+                        egui::Color32::from_rgb(150, 200, 150),
+                        egui::RichText::new(&self.url)
+                            .size(12.0)
+                    );
+                }
             });
 
+            ui.add_space(8.0);
             ui.separator();
+            ui.add_space(8.0);
 
+            // ID
             ui.horizontal(|ui| {
                 ui.label(
-                    egui::RichText::new("📌 ID:").size(14.0).strong()
+                    egui::RichText::new("📌 ID Задачі:")
+                        .size(13.0)
+                        .strong()
+                        .color(egui::Color32::from_rgb(200, 200, 200))
                 );
 
                 if let Some(id) = self.problem_id {
-                    ui.colored_label(egui::Color32::from_rgb(200, 150, 255), format!("#{}", id));
+                    ui.colored_label(
+                        egui::Color32::from_rgb(200, 150, 255),
+                        format!("#{}", id)
+                    );
                 }
                 else {
                     ui.colored_label(egui::Color32::DARK_GRAY, "(---)");
                 }
             });
+
+            ui.add_space(8.0);
         });
     }
 
     fn render_action_feedback(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(message) = self.get_action_message() {
-            ui.colored_label(egui::Color32::GREEN, &message);
+            ui.colored_label(
+                egui::Color32::GREEN,
+                egui::RichText::new(message)
+                    .size(13.0)
+                    .strong()
+            );
         }
     }
 
     fn render_saved_problems(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         ui.label(
-            egui::RichText::new("💾 Збережені задачі")
+            egui::RichText::new(format!("💾 Збережені задачі, ({})", self.saved_problems.len()))
                 .size(16.0)
                 .strong()
         );
 
+        ui.add_space(10.0);
+
         if self.saved_problems.is_empty() {
-            ui.colored_label(egui::Color32::DARK_GRAY, "Немає збережених задач.");
+            ui.vertical_centered(|ui| {
+                ui.add_space(20.0);
+                ui.heading(
+                    egui::RichText::new("📭")
+                        .size(48.0)
+                );
+                ui.label(
+                    egui::RichText::new("Немає збережених задач")
+                        .size(14.0)
+                        .color(egui::Color32::from_rgb(100, 100, 100))
+                );
+                ui.label(
+                    egui::RichText::new("Згенеруй задачу та натисни 💾 для збереження")
+                        .size(12.0)
+                        .color(egui::Color32::from_rgb(80, 80, 80))
+                );
+                ui.add_space(20.0);
+            });
         }
         else {
             egui::ScrollArea::vertical()
-                .max_height(200.0)
+                .auto_shrink([false; 2])
                 .show(ui, |ui| {
-                    ui.group(|ui| {
-                        for (i, problem) in self.saved_problems.iter().enumerate() {
+                    for (idx, problem) in self.saved_problems.iter().enumerate() {
+                        ui.group(|ui| {
+                            ui.add_space(8.0);
+
                             ui.horizontal(|ui| {
-                                ui.label(format!(
-                                    "#{} - {}",
-                                    problem.problem_id, problem.name
-                                ));
+                                ui.add_space(10.0);
 
-                                if ui.button("🔗").clicked() {
+                                // Problem info
+                                ui.vertical(|ui| {
+                                    // ID
+                                    ui.label(
+                                        egui::RichText::new(format!("#{}", problem.problem_id))
+                                            .size(12.0)
+                                            .color(egui::Color32::from_rgb(200, 150, 255))
+                                            .strong()
+                                    );
 
-                                }
+                                    // Name
+                                    ui.label(
+                                        egui::RichText::new(&problem.name)
+                                            .size(13.0)
+                                            .color(egui::Color32::from_rgb(200, 200, 200))
+                                            .strong()
+                                    );
 
-                                if ui.button("📋").clicked() {
+                                    // URL
+                                    ui.label(
+                                        egui::RichText::new(&problem.url)
+                                            .size(10.0)
+                                            .color(egui::Color32::from_rgb(100, 150, 200))
+                                            .strong()
+                                    );
+                                });
 
-                                }
+                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                    ui.add_space(5.0);
 
-                                if ui.button("🗑").clicked() {
+                                    // Delete button
+                                    if ui.button(
+                                        egui::RichText::new("🗑")
+                                            .size(16.0)
+                                    )
+                                        .on_hover_text("Видалити задачу")
+                                        .clicked()
+                                    {
+                                        //
+                                    }
 
-                                }
+                                    ui.add_space(5.0);
+
+                                    // Copy button
+                                    if ui.button(
+                                        egui::RichText::new("📋")
+                                            .size(16.0)
+                                    )
+                                        .on_hover_text("Копіювати URL")
+                                        .clicked()
+                                    {
+                                        //
+                                    }
+
+                                    ui.add_space(5.0);
+
+                                    // Open button
+                                    if ui.button(
+                                        egui::RichText::new("🔗")
+                                            .size(16.0)
+                                    )
+                                        .on_hover_text("Відкрити в браузері")
+                                        .clicked()
+                                    {
+                                        //
+                                    }
+
+                                    ui.add_space(10.0);
+                                });
                             });
 
-                            if i < self.saved_problems.len() - 1 {
-                                ui.separator();
-                            }
-                        };
-                    });
+                            ui.add_space(8.0);
+                        });
+
+                        if (idx < self.saved_problems.len() - 1) {
+                            ui.add_space(8.0);
+                        }
+                    };
                 });
         }
     }
