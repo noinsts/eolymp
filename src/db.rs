@@ -72,4 +72,11 @@ impl Database {
         problems::table
             .load::<Problem>(&mut self.connection)
     }
+
+    pub fn delete_problem(&mut self, problem_id: i32) -> Result<(), diesel::result::Error> {
+        diesel::delete(problems::table.filter(problems::problem_id.eq(problem_id)))
+            .execute(&mut self.connection)?;
+
+        Ok(())
+    }
 }
