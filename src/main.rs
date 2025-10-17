@@ -100,8 +100,8 @@ impl MyApp {
         self.problem_id.is_some()
     }
 
-    fn copy(&mut self, ctx: &egui::Context) {
-        ctx.copy_text(self.url.clone());
+    fn copy(&mut self, ctx: &egui::Context, url: String) {
+        ctx.copy_text(url);
         self.set_action(AppAction::Copied);
     }
 
@@ -296,7 +296,7 @@ impl MyApp {
                 .on_hover_text("Скопіювати URL у буфер")
                 .clicked()
             {
-                self.copy(ctx);
+                self.copy(ctx, self.url.clone());
             }
 
             // Save button
@@ -458,6 +458,7 @@ impl MyApp {
         else {
             let mut to_delete = None;
             let mut to_open = None;
+            let mut to_copy = None;
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
@@ -519,7 +520,7 @@ impl MyApp {
                                         .on_hover_text("Копіювати URL")
                                         .clicked()
                                     {
-                                        //
+                                        to_copy = Some(problem.url.clone());
                                     }
 
                                     ui.add_space(5.0);
@@ -554,6 +555,10 @@ impl MyApp {
 
             if let Some(url) = to_open {
                 self.open_url(url);
+            }
+
+            if let Some(url) = to_copy {
+                self.copy(ctx, url);
             }
         }
     }
