@@ -234,6 +234,23 @@ impl MyApp {
             {
                 self.copy(ctx);
             }
+
+            if ui.add_enabled(
+                self.is_url_valid(),
+                egui::Button::new(
+                    egui::RichText::new("🗒 Save")
+                        .color(egui::Color32::WHITE)
+                        .strong()
+                )
+                    .fill(egui::Color32::from_rgb(100, 100, 100))
+                    .min_size(egui::vec2(button_width, button_height))
+                    .stroke(egui::Stroke::new(2.0, egui::Color32::from_rgb(255, 220, 150)))
+            )
+                .on_hover_text("Зберігає задачу")
+                .clicked()
+            {
+                println!("Clicked!");
+            }
         });
     }
 
