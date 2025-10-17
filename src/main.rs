@@ -352,7 +352,7 @@ impl MyApp {
                 .max_height(200.0)
                 .show(ui, |ui| {
                     ui.group(|ui| {
-                        for problem in &self.saved_problems {
+                        for (i, problem) in self.saved_problems.iter().enumerate() {
                             ui.horizontal(|ui| {
                                 ui.label(format!(
                                     "#{} - {}",
@@ -371,7 +371,10 @@ impl MyApp {
 
                                 }
                             });
-                            ui.separator();
+
+                            if i < self.saved_problems.len() - 1 {
+                                ui.separator();
+                            }
                         };
                     });
                 });
