@@ -17,8 +17,8 @@ table! {
 pub struct Problem {
     pub id: i32,
     pub problem_id: i32,
-    pub url: String,
     pub name: String,
+    pub url: String,
 }
 
 #[derive(Insertable, AsChangeset, Debug)]
