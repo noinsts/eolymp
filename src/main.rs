@@ -55,7 +55,7 @@ impl MyApp {
         let (tx, rx) = mpsc::channel();
         let db = Database::new().expect("Could not initialize database");
 
-        Self {
+        let mut app = Self {
             url: String::new(),
             problem_id: None,
             name: None,
@@ -66,7 +66,10 @@ impl MyApp {
             db,
             rx,
             tx,
-        }
+        };
+
+        app.reload_problems();
+        app
     }
 
     fn generate_url(&mut self) {
@@ -188,7 +191,6 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.check_for_title();
-        self.reload_problems();
 
         egui::CentralPanel::default()
             .frame(egui::Frame {
