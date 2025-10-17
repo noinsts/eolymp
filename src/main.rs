@@ -34,6 +34,7 @@ enum AppAction {
     Opened,
     Copied,
     Saved,
+    Deleted,
 }
 
 struct MyApp {
@@ -120,6 +121,16 @@ impl MyApp {
         }
     }
 
+    fn delete_saved_problem(&mut self, id: i32) {
+        match self.db.delete_problem(id) {
+            Ok(_) => {
+                self.set_action(AppAction::Deleted);
+                self.reload_problems();
+            }
+            Err(e) => eprintln!("Помилка видалення задачі: {}", e),
+        };
+    }
+
     fn get_action_message(&self) -> Option<String> {
         if let (Some(action), Some(timestamp)) = (self.last_action, self.timestamp) {
             if timestamp.elapsed() < Duration::from_secs(1) {
@@ -128,6 +139,7 @@ impl MyApp {
                     AppAction::Opened => "🌐 URL відкрито в браузері!".to_string(),
                     AppAction::Copied => "📋 Скопійовано в буфер обміну!".to_string(),
                     AppAction::Saved => "💾 Задачу збережено".to_string(),
+                    AppAction::Deleted => "🗑 Задачу видалено".to_string(),
                 })
             }
         }
@@ -442,6 +454,7 @@ impl MyApp {
             });
         }
         else {
+            let mut to_delete = None;
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
@@ -490,7 +503,7 @@ impl MyApp {
                                         .on_hover_text("Видалити задачу")
                                         .clicked()
                                     {
-                                        //
+                                        to_delete = Some(problem.problem_id);
                                     }
 
                                     ui.add_space(5.0);
@@ -531,6 +544,10 @@ impl MyApp {
                         }
                     };
                 });
+
+            if let Some(id) = to_delete {
+                self.delete_saved_problem(id);
+            }
         }
     }
 }
