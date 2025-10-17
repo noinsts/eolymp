@@ -175,6 +175,7 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.check_for_title();
+        self.reload_problems();
 
         egui::CentralPanel::default()
             .frame(egui::Frame {
@@ -196,6 +197,9 @@ impl eframe::App for MyApp {
 
                     ui.add_space(15.0);
                     self.render_action_feedback(ui, ctx);
+
+                    ui.add_space(15.0);
+                    self.render_saved_problems(ui, ctx);
                 });
             });
     }
@@ -330,6 +334,47 @@ impl MyApp {
     fn render_action_feedback(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(message) = self.get_action_message() {
             ui.colored_label(egui::Color32::GREEN, &message);
+        }
+    }
+
+    fn render_saved_problems(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        ui.label(
+            egui::RichText::new("💾 Збережені задачі")
+                .size(16.0)
+                .strong()
+        );
+
+        if self.saved_problems.is_empty() {
+            ui.colored_label(egui::Color32::DARK_GRAY, "Немає збережених задач.");
+        }
+        else {
+            egui::ScrollArea::vertical()
+                .max_height(200.0)
+                .show(ui, |ui| {
+                    ui.group(|ui| {
+                        for problem in &self.saved_problems {
+                            ui.horizontal(|ui| {
+                                ui.label(format!(
+                                    "#{} - {}",
+                                    problem.problem_id, problem.name
+                                ));
+
+                                if ui.button("🔗").clicked() {
+
+                                }
+
+                                if ui.button("📋").clicked() {
+
+                                }
+
+                                if ui.button("🗑").clicked() {
+
+                                }
+                            });
+                            ui.separator();
+                        };
+                    });
+                });
         }
     }
 }
