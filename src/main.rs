@@ -1,9 +1,13 @@
+mod db;
+
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use std::thread;
+use diesel::serialize::ToSql;
 use eframe::egui;
 use rand::Rng;
 use scraper::{Html, Selector};
+use crate::db::{Database, Problem};
 
 const BASE_URL: &str = "https://eolymp.com/uk/problems";
 const MIN_PROBLEM_ID: u32 = 1;
@@ -28,6 +32,7 @@ enum AppAction {
     Generated,
     Opened,
     Copied,
+    Saved,
 }
 
 struct MyApp {
@@ -37,6 +42,8 @@ struct MyApp {
     is_loading: bool,
     last_action: Option<AppAction>,
     timestamp: Option<Instant>,
+    saved_problems: Vec<db::Problem>,
+    db: Database,
     rx: mpsc::Receiver<String>,
     tx: mpsc::Sender<String>,
 }
@@ -44,6 +51,7 @@ struct MyApp {
 impl MyApp {
     fn new() -> Self {
         let (tx, rx) = mpsc::channel();
+        let db = Database::new().expect("Could not initialize database");
 
         Self {
             url: String::new(),
@@ -52,6 +60,8 @@ impl MyApp {
             is_loading: false,
             last_action: None,
             timestamp: None,
+            saved_problems: Vec::new(),
+            db,
             rx,
             tx,
         }
@@ -90,6 +100,25 @@ impl MyApp {
         self.set_action(AppAction::Copied);
     }
 
+    fn save(&mut self) {
+        if let (Some(id), Some(name)) = (self.problem_id, &self.name) {
+            match self.db.save_problem(id as i32, name.clone(), self.url.clone()) {
+                Ok(_) => {
+                    self.set_action(AppAction::Saved);
+                    self.reload_problems();
+                }
+                Err(e) => eprintln!("Помилка при збереженні задачі: {:?}", e),
+            }
+        }
+    }
+
+    fn reload_problems(&mut self) {
+        match self.db.get_all_problems() {
+            Ok(problems) => self.saved_problems = problems,
+            Err(e) => eprintln!("Помилка при завантаженні задач: {:?}", e),
+        }
+    }
+
     fn get_action_message(&self) -> Option<String> {
         if let (Some(action), Some(timestamp)) = (self.last_action, self.timestamp) {
             if timestamp.elapsed() < Duration::from_secs(1) {
@@ -97,6 +126,7 @@ impl MyApp {
                     AppAction::Generated => "✅ URL згенеровано!".to_string(),
                     AppAction::Opened => "🌐 URL відкрито в браузері!".to_string(),
                     AppAction::Copied => "📋 Скопійовано в буфер обміну!".to_string(),
+                    AppAction::Saved => "💾 Задачу збережено".to_string(),
                 })
             }
         }
@@ -176,7 +206,7 @@ impl MyApp {
         let button_width = 100.0;
         let button_height = 40.0;
         let spacing_x = 10.0;
-        let num_buttons = 3.0;
+        let num_buttons = 4.0;
 
         let total_buttons_width = num_buttons * button_width + (num_buttons - 1.0) * spacing_x;
         let left_padding = (ui.available_width() - total_buttons_width) / 2.0;
@@ -238,7 +268,7 @@ impl MyApp {
             if ui.add_enabled(
                 self.is_url_valid(),
                 egui::Button::new(
-                    egui::RichText::new("🗒 Save")
+                    egui::RichText::new("💾 Save")
                         .color(egui::Color32::WHITE)
                         .strong()
                 )
@@ -249,7 +279,7 @@ impl MyApp {
                 .on_hover_text("Зберігає задачу")
                 .clicked()
             {
-                println!("Clicked!");
+                self.save();
             }
         });
     }
