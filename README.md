@@ -27,13 +27,13 @@
 
 ## 📦 Залежності
 
-- **[eframe](https://crates.io/crates/eframe/)** - Framework для побудови графічного інтерфейсу.
-- **[egui](https://crates.io/crates/egui/)** - Immediate mode GUI toolkit.
-- **[diesel](https://crates.io/crates/diesel/)** - ORM для роботи з базою даних.
-- **[reqwest](https://crates.io/crates/reqwest/)** - HTTP клієнт для веб-запитів.
-- **[scraper](https://crates.io/crates/scraper/)** - Парсер HTML.
-- **[rand](https://crates.io/crates/rand/)** - Генератор випадкових чисел.
-- **[open](https://crates.io/crates/open/)** - Відкриття посилань у браузері за замовчуванням.
+- 🎨 **[eframe](https://crates.io/crates/eframe/)** - Framework для побудови графічного інтерфейсу.
+- ⚡ **[egui](https://crates.io/crates/egui/)** - Immediate mode GUI toolkit.
+- 🗄️ **[diesel](https://crates.io/crates/diesel/)** - ORM для роботи з базою даних.
+- 🌐 **[reqwest](https://crates.io/crates/reqwest/)** - HTTP клієнт для веб-запитів.
+- 🕷️ **[scraper](https://crates.io/crates/scraper/)** - Парсер HTML.
+- 🎲 **[rand](https://crates.io/crates/rand/)** - Генератор випадкових чисел.
+- 🔗 **[open](https://crates.io/crates/open/)** - Відкриття посилань у браузері за замовчуванням.
 
 
 ## 🚀 Швидкий старт
