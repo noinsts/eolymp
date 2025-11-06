@@ -96,22 +96,15 @@ CREATE TABLE IF NOT EXISTS problems (
 
 ## ✨ Автор
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <a href="https://github.com/noinsts">
-          <img src="https://avatars.githubusercontent.com/u/114863893?v=4" width="120px;" alt="noinsts"/>
-          <br />
-          <sub><b>noinsts</b></sub>
-        </a>
-        <br />
-        <a href="https://github.com/noinsts/weather-rs/commits?author=noinsts" title="Code">💻</a>
-        <a href="#maintenance-noinsts" title="Maintenance">🚧</a>
-      </td>
-    </tr>
-  </table>
-</div>
+<table>
+<tr>
+  <td align="center">
+    <img src="https://avatars.githubusercontent.com/u/114863893?v=4" width="120px;" alt="noinsts"/>
+    <br />
+    <sub><b>noinsts</b></sub>
+  </td>
+</tr>
+</table>
 
 ## 📧 Контакти
 
